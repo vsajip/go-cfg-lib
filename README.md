@@ -21,7 +21,7 @@ To explore CFG functionality for Go, we use the `gore` Read-Eval-Print-Loop (REP
 ```
 $ gore
 ```
-Note that `gore` requires a version of Go that supports Go modules. We use a slightly modified version for this documentation, which prints the type of the objects explored in addition to printing their values.`
+Note that `gore` requires a version of Go that supports Go modules. We use a slightly modified version for this documentation, which prints the type of the objects explored in addition to printing their values.
 
 Getting Started with CFG in Go
 ==============================
