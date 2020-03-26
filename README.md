@@ -1,3 +1,16 @@
+The CFG configuration format is a text format for configuration files which is similar to, and a superset of, the JSON format. It dates from [2008](https://wiki.python.org/moin/HierConfig) and has the following aims:
+
+* Allow a hierarchical configuration scheme with support for key-value mappings and lists.
+* Support cross-references between one part of the configuration and another.
+* Provide the ability to compose configurations (using include and merge facilities).
+* Provide the ability to access real application objects safely.
+
+It overcomes a number of drawbacks of JSON when used as a configuration format:
+
+* JSON is more verbose than necessary.
+* JSON doesn’t allow comments.
+* JSON doesn’t allow trailing commas in lists and mappings.
+
 Installation
 ============
 You can use this package using ``go get github.com/vsajip/go-cfg-lib/config`` and then importing ``github.com/vsajip/go-cfg-lib/config`` in your code.
