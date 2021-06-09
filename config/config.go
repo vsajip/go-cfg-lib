@@ -29,6 +29,22 @@ func newMapWrapper(config *Config, data *Mapping) MapWrapper {
 	return MapWrapper{data, config}
 }
 
+func (self MapWrapper) String() string {
+	parts := make([]string, 0)
+	for k, _ := range *self.data {
+		var s string
+
+		v, err := self.Get(k)
+		if err != nil {
+			s = "???"
+		} else {
+			s = fmt.Sprintf("%s: %s", k, v)
+		}
+		parts = append(parts, s)
+	}
+	return fmt.Sprintf("{%s}", strings.Join(parts, ", "))
+}
+
 var identifierPattern = regexp.MustCompile(`^([\p{L}_]([\p{L}\p{N}_])*)$`)
 
 func isIdentifier(s string) bool {
@@ -96,6 +112,22 @@ func newSeqWrapper(config *Config, data *Sequence) SeqWrapper {
 	return SeqWrapper{data, config}
 }
 
+func (self SeqWrapper) String() string {
+	parts := make([]string, 0)
+	for i, _ := range *self.data {
+		var s string
+
+		v, err := self.Get(i)
+		if err != nil {
+			s = "???"
+		} else {
+			s = fmt.Sprintf("%s", v)
+		}
+		parts = append(parts, s)
+	}
+	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
+}
+
 func (self *SeqWrapper) baseGet(index int) Any {
 	return (*self.data)[index]
 }
@@ -132,7 +164,7 @@ func (self *SeqWrapper) AsList() (Sequence, error) {
 	return result, err
 }
 
-type StringConverter func(string) Any
+type StringConverter func(string, *Config) Any
 
 type Config struct {
 	NoDuplicates      bool
@@ -162,10 +194,11 @@ func (self *Config) String() string {
 
 var isoDatetimePattern = regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2})(([ T])(((\d{2}):(\d{2}):(\d{2}))(\.\d{1,6})?(([+-])(\d{2}):(\d{2})(:(\d{2})(\.\d{1,6})?)?)?))?$`)
 var envValuePattern = regexp.MustCompile(`^\$(\w+)(\|(.*))?$`)
+var interpolationPattern = regexp.MustCompile(`\$\{([^}]+)\}`)
 
 // var colonObjectPattern = regexp.MustCompile(`^([A-Za-z_]\w*([/.][A-Za-z_]\w*)*)(:([A-Za-z_]\w*))?$`)
 
-func defaultStringConverter(s string) Any {
+func defaultStringConverter(s string, cfg *Config) Any {
 	var result Any = s
 	var parts []string
 
@@ -223,20 +256,35 @@ func defaultStringConverter(s string) Any {
 					result = parts[3]
 				}
 			}
-		} /* else {
-			parts = colonObjectPattern.FindStringSubmatch(s)
-			if parts != nil {
-				pkg, err := importer.Default().Import(parts[1])
-				if err == nil {
-					v := pkg.Scope().Lookup(parts[4])
-					if v != nil {
-						// Now we know the special string value is valid as far as package and name are
-						// concerned. TODO how to get from that to the actual value.
-						// result = v
+		} else {
+			matches := interpolationPattern.FindAllStringSubmatchIndex(s, -1)
+			if matches != nil {
+				cp := 0
+				failed := false
+				sparts := make([]string, 0)
+				for _, match := range matches {
+					sp := match[0]
+					ep := match[1]
+					path := s[match[2]:match[3]]
+					if cp < sp {
+						sparts = append(sparts, s[cp:sp])
 					}
+					v, err := cfg.Get(path)
+					if err != nil {
+						failed = true
+						break
+					}
+					sparts = append(sparts, fmt.Sprintf("%v", v))
+					cp = ep
+				}
+				if !failed {
+					if cp < len(s) {
+						sparts = append(sparts, s[cp:])
+					}
+					result = strings.Join(sparts, "")
 				}
 			}
-		} */
+		}
 	}
 	return result
 }
@@ -1069,7 +1117,7 @@ func (self *Config) convertString(s string) (Any, error) {
 	var result Any
 	var err error
 
-	result = self.converter(s)
+	result = self.converter(s, self)
 	if self.StrictConversions && (result == s) {
 		err = errFmt(nil, "Unable to convert string %v", s)
 	}

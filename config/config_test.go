@@ -1421,6 +1421,10 @@ func TestConfigExpressions(t *testing.T) {
 	assert.Equal(t, "b", v)
 	v = V(t, config, "f.g")
 	assert.Equal(t, "h", v)
+	v = V(t, config, "interp")
+	assert.Equal(t, "A-4 a test_foo true 10 1e-07 1 b [a, c, e, g]Z", v)
+	v = V(t, config, "interp2")
+	assert.Equal(t, "{a: b}", v)
 
 	type pathCase struct {
 		path    string
@@ -1432,6 +1436,7 @@ func TestConfigExpressions(t *testing.T) {
 		{"dict[4]", "string required, but found 4", 0, 0},
 		{"list['foo']", "integer required, but found 'foo'", 0, 0},
 		{"dict[:4]", "slices can only operate on lists", 0, 0},
+		{"bad_interp", "Unable to convert string ", 0, 0},
 	}
 	for _, c := range cases {
 		v, err = config.Get(c.path)
