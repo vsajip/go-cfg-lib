@@ -270,7 +270,7 @@ func newTokenizer(reader *io.Reader) tokenizer {
 }
 
 func (self *tokenizer) pushBack(c rune) {
-	if (c != 0) && ((c == '\n') || !unicode.IsSpace(c)) {
+	if c != 0 {
 		pb := pushBack{char: c, pos: copyLocation(&self.charLocation)}
 		self.pushedBack = append(self.pushedBack, pb)
 	}
