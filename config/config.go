@@ -270,16 +270,25 @@ func (self *evaluator) evalAt(node UnaryNode) (Any, error) {
 		if p, ok := operand.(string); !ok {
 			err = errFmt(nil, "@ operand must be a string, but is: %#v", operand)
 		} else {
+			var fn string
+
 			found := false
-			fn := filepath.Join(self.config.RootDir, p)
-			if _, err = os.Stat(fn); err == nil {
-				found = true
+			if filepath.IsAbs(p) {
+				if _, err = os.Stat(p); err == nil {
+					fn = p
+					found = true
+				}
 			} else {
-				for _, dn := range self.config.IncludePath {
-					fn = filepath.Join(dn, p)
-					if _, err = os.Stat(fn); err == nil {
-						found = true
-						break
+				fn = filepath.Join(self.config.RootDir, p)
+				if _, err = os.Stat(fn); err == nil {
+					found = true
+				} else {
+					for _, dn := range self.config.IncludePath {
+						fn = filepath.Join(dn, p)
+						if _, err = os.Stat(fn); err == nil {
+							found = true
+							break
+						}
 					}
 				}
 			}

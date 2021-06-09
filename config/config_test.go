@@ -1168,6 +1168,8 @@ func TestConfigMainConfig(t *testing.T) {
 	logConf := mustGetConfigValue(t, config, "logging")
 	v, err = logConf.Get("handlers.file/filename")
 	checkError(t, err, "Invalid Path: handlers.file/filename", 1, 14)
+	v, err = logConf.Get("\"handlers.file/filename")
+	checkError(t, err, "Invalid Path: \"handlers.file/filename", 1, 1)
 	v, err = logConf.GetWithDefault("foo", "bar")
 	assert.Nil(t, err)
 	assert.Equal(t, "bar", v)
@@ -1727,4 +1729,30 @@ func TestConfigSlicesAndIndices(t *testing.T) {
 		_, err := config.Get(k)
 		checkError(t, err, "index out of range: ", 0, 0)
 	}
+}
+
+func TestAbsoluteIncludePath(t *testing.T) {
+	V := mustGetValue
+
+	p, err := filepath.Abs(dataFilePath("derived", "test.cfg"))
+	p = strings.Replace(p, "\\", "/", -1)
+	source := strings.Replace("test: @'foo'", "foo", p, -1)
+	var sr io.Reader = strings.NewReader(source)
+	cfg := NewConfig()
+	err = cfg.Load(&sr)
+	assert.Nil(t, err)
+	cv := V(t, cfg, "test.computed6")
+	assert.Equal(t, int64(2), cv)
+}
+
+func TestNestedIncludePath(t *testing.T) {
+	V := mustGetValue
+	p := dataFilePath("base", "top.cfg")
+
+	cfg, err := fromPath(t, p)
+	assert.Nil(t, err)
+	cfg.IncludePath = append(cfg.IncludePath, dataFilePath("derived"))
+	cfg.IncludePath = append(cfg.IncludePath, dataFilePath("another"))
+	cv := V(t, cfg, "level1.level2.final")
+	assert.Equal(t, int64(42), cv)
 }
