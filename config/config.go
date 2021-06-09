@@ -193,6 +193,13 @@ func defaultStringConverter(s string) Any {
 			}
 			hasOffset := parts[13] != ""
 			if hasOffset {
+				var sign int
+
+				if parts[13] == "-" {
+					sign = -1
+				} else {
+					sign = 1
+				}
 				offsetHour, _ = strconv.Atoi(parts[14])
 				offsetMinute, _ = strconv.Atoi(parts[15])
 				if parts[17] == "" {
@@ -200,7 +207,7 @@ func defaultStringConverter(s string) Any {
 				} else {
 					offsetSecond, _ = strconv.Atoi(parts[17])
 				}
-				loc = time.FixedZone("", offsetHour*3600+offsetMinute*60+offsetSecond)
+				loc = time.FixedZone("", sign*(offsetHour*3600+offsetMinute*60+offsetSecond))
 			}
 		}
 		result = time.Date(year, time.Month(month), day, hour, minute, second, nanosecond, loc)
@@ -1146,7 +1153,9 @@ func parsePath(s string) (Any, error) {
 	var parser Parser
 
 	parser, err = makeParser(s)
-	if err == nil {
+	if err != nil {
+		err = errFmt(&parser.next.start, "Invalid Path: %s", s)
+	} else {
 		var failed = false
 
 		if parser.next.kind != Word {

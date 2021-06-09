@@ -754,10 +754,13 @@ func (self *Parser) MappingBody() (Any, error) {
 									if err == nil {
 										kind, err = self.consumeNewlines()
 									}
+								} else if kind != RightCurly && kind != EOF {
+									err = errFmt(&self.next.start, "unexpected after key-value pair: %v", tokenDescriptions[kind])
 								}
 							}
 						}
 					}
+
 				}
 			}
 		}
