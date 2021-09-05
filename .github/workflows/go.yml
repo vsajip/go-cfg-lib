@@ -22,7 +22,18 @@ jobs:
       with:
         go-version: 1.17
 
-    - name: Test
+    - name: Run tests on Windows after setting HOME environment variable
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        $env:HOME = $env:HOMEPATH
+        echo "$HOME"
+        cd config
+        go mod download github.com/chzyer/logex
+        go get -t config
+        go test -v ./...
+
+    - name: Run tests on POSIX
+      if: ${{ matrix.os != 'windows-latest' }}
       run: |
         cd config
         go mod download github.com/chzyer/logex
