@@ -558,11 +558,30 @@ func (self *tokenizer) getToken() (Token, error) {
 			endLocation.Update(&self.location)
 			t.kind = Newline
 			break
+		} else if c == '\r' {
+			c = self.getChar()
+			if c != '\n' {
+				err = errFmt(&self.charLocation, "unexpected character: %c", c)
+			} else {
+				text = self.appendChar(text, c, &endLocation)
+				endLocation.Update(&self.location)
+				t.kind = Newline
+			}
+			break
 		} else if c == '\\' {
 			c = self.getChar()
 			if c == '\n' {
 				endLocation.Update(&self.location)
 				continue
+			} else if c == '\r' {
+				c = self.getChar()
+				if c != '\n' {
+					err = errFmt(&self.charLocation, "unexpected character: %c", c)
+					break
+				} else {
+					endLocation.Update(&self.location)
+					continue
+				}
 			} else {
 				err = errFmt(&self.charLocation, "unexpected character: \\")
 				break

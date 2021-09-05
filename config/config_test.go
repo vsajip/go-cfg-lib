@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -1289,11 +1290,20 @@ func TestConfigExampleConfig(t *testing.T) {
 	assert.Equal(t, "\U0001F602", v1)
 	assert.Equal(t, v1, v2)
 	v1 = SV(t, config, "strings")
-	v2 = Sequence{
-		"Oscar Fingal O'Flahertie Wills Wilde",
-		"size: 5\"",
-		"Triple quoted form\ncan span\n'multiple' lines",
-		"with \"either\"\nkind of 'quote' embedded within",
+	if runtime.GOOS == "windows" {
+		v2 = Sequence{
+			"Oscar Fingal O'Flahertie Wills Wilde",
+			"size: 5\"",
+			"Triple quoted form\r\ncan span\r\n'multiple' lines",
+			"with \"either\"\r\nkind of 'quote' embedded within",
+		}
+	} else {
+		v2 = Sequence{
+			"Oscar Fingal O'Flahertie Wills Wilde",
+			"size: 5\"",
+			"Triple quoted form\ncan span\n'multiple' lines",
+			"with \"either\"\nkind of 'quote' embedded within",
+		}
 	}
 	assert.Equal(t, v2, v1)
 
