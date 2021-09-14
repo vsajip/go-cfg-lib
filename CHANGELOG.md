@@ -2,7 +2,7 @@
 
 All notable changes for the new implementation should be documented in this file.
 
-## 0.1.1 - 2021-09-13
+## 0.1.1 - 2021-09-14
 ### Added
 * [`6af7e00`](https://github.com/vsajip/go-cfg-lib/commit/6af7e00)
   Add interpolation functionality.
