@@ -27,15 +27,11 @@ jobs:
       run: |
         $env:HOME = $env:HOMEPATH
         echo "$HOME"
-        cd config
-        go mod download github.com/chzyer/logex
-        go get -t config
+        go mod download github.com/stretchr/testify
         go test -v ./...
 
     - name: Run tests on POSIX
       if: ${{ matrix.os != 'windows-latest' }}
       run: |
-        cd config
-        go mod download github.com/chzyer/logex
-        go get -t config
+        go mod download github.com/stretchr/testify
         go test -v ./...
