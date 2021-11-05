@@ -233,6 +233,7 @@ var punctuation = map[rune]tokenKind{
 	'|': BitwiseOr,
 	'^': BitwiseXor,
 	'.': Dot,
+	'=': Assign,
 }
 
 var keywords = map[string]tokenKind{
@@ -698,18 +699,6 @@ func (self *tokenizer) getToken() (Token, error) {
 			text = self.appendChar(text, c, &endLocation)
 			text, t.kind, t.value, err = self.getNumber(text, startLocation, &endLocation)
 			break
-		} else if c == '=' {
-			nc := self.getChar()
-			if nc != c {
-				t.kind = Assign
-				text = append(text, c)
-				self.pushBack(nc)
-			} else {
-				t.kind = Equal
-				text = append(text, c)
-				text = self.appendChar(text, c, &endLocation)
-			}
-			break
 		} else if pv, ok := punctuation[c]; ok {
 			t.kind = pv
 			text = self.appendChar(text, c, &endLocation)
@@ -721,6 +710,15 @@ func (self *tokenizer) getToken() (Token, error) {
 					text = self.appendChar(text, c, &endLocation)
 					text, t.kind, t.value, err = self.getNumber(text, startLocation, &endLocation)
 				}
+			} else if c == '=' {
+				nc := self.getChar()
+				if nc != c {
+					self.pushBack(nc)
+				} else {
+					t.kind = Equal
+					text = self.appendChar(text, c, &endLocation)
+				}
+				break
 			} else if c == '-' {
 				c = self.getChar()
 				if !unicode.IsDigit(c) && (c != '.') {

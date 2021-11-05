@@ -635,7 +635,7 @@ func (self *Parser) comparison() (Any, error) {
 
 	result, err = self.bitOrExpr()
 
-	for err == nil && comparisonOperators[self.next.kind] {
+	if err == nil && comparisonOperators[self.next.kind] {
 		var op tokenKind
 
 		op, err = self.compOp()
