@@ -309,6 +309,20 @@ var scalarTokens = map[tokenKind]bool{
 	String:  true,
 }
 
+func sameFile(s1 string, s2 string) bool {
+	var info1 os.FileInfo
+	var info2 os.FileInfo
+	var err error
+
+	if info1, err = os.Stat(s1); err != nil {
+		return false
+	}
+	if info2, err = os.Stat(s2); err != nil {
+		return false
+	}
+	return os.SameFile(info1, info2)
+}
+
 func (self *evaluator) evalAt(node UnaryNode) (Any, error) {
 	var result Any
 	var operand Any
@@ -343,47 +357,51 @@ func (self *evaluator) evalAt(node UnaryNode) (Any, error) {
 			if !found {
 				err = errFmt(nil, "Unable to locate %s", p)
 			} else {
-				var f *os.File
+				if self.config.Path != "" && sameFile(self.config.Path, fn) {
+					err = errFmt(nil, "Configuration cannot include itself: %s", filepath.Base(fn))
+				} else {
+					var f *os.File
 
-				f, err = os.Open(fn)
-				if err == nil {
-					var reader io.Reader
-					var parser Parser
-
-					defer closeFile(f)
-					reader = bufio.NewReader(f)
-					parser, err = NewParser(&reader)
+					f, err = os.Open(fn)
 					if err == nil {
-						var node Any
+						var reader io.Reader
+						var parser Parser
 
-						node, err = parser.Container()
+						defer closeFile(f)
+						reader = bufio.NewReader(f)
+						parser, err = NewParser(&reader)
 						if err == nil {
-							switch v := node.(type) {
-							case []keyValue:
-								var mapping MapWrapper
+							var node Any
 
-								cfg := NewConfig()
-								cfg.NoDuplicates = self.config.NoDuplicates
-								cfg.StrictConversions = self.config.StrictConversions
-								mapping, err = cfg.wrapMapping(v)
-								if err == nil {
-									err = cfg.setPath(fn)
+							node, err = parser.Container()
+							if err == nil {
+								switch v := node.(type) {
+								case []keyValue:
+									var mapping MapWrapper
+
+									cfg := NewConfig()
+									cfg.NoDuplicates = self.config.NoDuplicates
+									cfg.StrictConversions = self.config.StrictConversions
+									mapping, err = cfg.wrapMapping(v)
 									if err == nil {
-										cfg.data = &mapping
-										cfg.parent = self.config
-										cfg.Context = self.config.Context
-										cfg.IncludePath = self.config.IncludePath[:]
-										if self.config.cache != nil {
-											cache := make(Mapping)
-											cfg.cache = &cache
+										err = cfg.setPath(fn)
+										if err == nil {
+											cfg.data = &mapping
+											cfg.parent = self.config
+											cfg.Context = self.config.Context
+											cfg.IncludePath = self.config.IncludePath[:]
+											if self.config.cache != nil {
+												cache := make(Mapping)
+												cfg.cache = &cache
+											}
+											result = cfg
 										}
-										result = cfg
 									}
+								case Sequence:
+									result = newSeqWrapper(self.config, &v)
+								default:
+									result = v
 								}
-							case Sequence:
-								result = newSeqWrapper(self.config, &v)
-							default:
-								result = v
 							}
 						}
 					}

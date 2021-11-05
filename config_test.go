@@ -7,7 +7,6 @@ package config
 import (
 	"bufio"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"os"
@@ -18,6 +17,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var separator = regexp.MustCompile(`^-- ([A-Z]\d+) -+`)
@@ -1770,4 +1771,13 @@ func TestNestedIncludePath(t *testing.T) {
 	cfg.IncludePath = append(cfg.IncludePath, dataFilePath("another"))
 	cv := V(t, cfg, "level1.level2.final")
 	assert.Equal(t, int64(42), cv)
+}
+
+func TestRecursiveConfiguration(t *testing.T) {
+	p := dataFilePath("derived", "recurse.cfg")
+
+	cfg, err := fromPath(t, p)
+	assert.Nil(t, err)
+	_, err = cfg.Get("recurse")
+	checkError(t, err, "Configuration cannot include itself: recurse.cfg", 0, 0)
 }
