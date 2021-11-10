@@ -652,9 +652,7 @@ func (self *tokenizer) getToken() (Token, error) {
 				c2 := self.getChar()
 				if c2 != quote {
 					self.pushBack(c2)
-					if c2 == 0 {
-						self.charLocation.Update(&c1Loc)
-					}
+					self.charLocation.Update(&c1Loc)
 					self.pushBack(c1)
 				} else {
 					multiLine = true
