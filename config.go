@@ -58,9 +58,18 @@ func (self *MapWrapper) Get(key string) (Any, error) {
 	var ok bool
 
 	if result, ok = (*self.data)[key]; ok {
-		result, err = self.config.evaluated(result)
+		result, err = self.config.evaluator.evaluate(result)
 	} else if !isIdentifier(key) {
-		result, err = self.config.getFromPath(key)
+		var node Any
+
+		node, err = parsePath(key)
+		if err == nil {
+			rs := make(map[UnaryNode]bool)
+			// clear out any existing refs
+			self.config.evaluator.refsSeen = &rs
+			result, err = self.config.evaluator.getFromPath(node)
+		}
+		//result, err = self.config.getFromPath(key)
 	} else {
 		return nil, errFmt(nil, "Not found in configuration: %s", key)
 	}
@@ -83,7 +92,7 @@ func (self *MapWrapper) AsDict() (Mapping, error) {
 	result := make(Mapping)
 
 	for key, item = range *self.data {
-		item, err = self.config.evaluated(item)
+		item, err = self.config.evaluator.evaluate(item)
 		if err != nil {
 			break
 		}
@@ -134,7 +143,7 @@ func (self *SeqWrapper) baseGet(index int) Any {
 
 func (self *SeqWrapper) Get(index int) (Any, error) {
 	v := self.baseGet(index)
-	return self.config.evaluated(v)
+	return self.config.evaluator.evaluate(v)
 }
 
 func (self *SeqWrapper) AsList() (Sequence, error) {
@@ -144,7 +153,7 @@ func (self *SeqWrapper) AsList() (Sequence, error) {
 	result := make(Sequence, 0)
 
 	for _, item = range *self.data {
-		item, err = self.config.evaluated(item)
+		item, err = self.config.evaluator.evaluate(item)
 		if err != nil {
 			break
 		}
@@ -1067,7 +1076,11 @@ func (self *evaluator) getFromPath(node Any) (Any, error) {
 }
 
 func NewConfig() *Config {
-	var result = Config{true, true, make([]string, 0), "", "", nil, nil, nil,
+	wd, err := os.Getwd()
+	if err != nil {
+		panic("Unable to get current directory")
+	}
+	var result = Config{true, true, make([]string, 0), wd, "", nil, nil, nil,
 		nil, nil, defaultStringConverter}
 	var e = newEvaluator(&result)
 	result.evaluator = &e
@@ -1351,30 +1364,6 @@ func toSource(o Any) string {
 	return result
 }
 
-func (self *Config) getFromPath(key string) (Any, error) {
-	var result Any
-	var err error
-
-	if self.data == nil {
-		err = errFmt(nil, "No data in configuration")
-	} else {
-		var node Any
-
-		node, err = parsePath(key)
-		if err == nil {
-			rs := make(map[UnaryNode]bool)
-			// clear out any existing refs
-			self.evaluator.refsSeen = &rs
-			result, err = self.evaluator.getFromPath(node)
-		}
-	}
-	return result, err
-}
-
 func (self *Config) AsDict() (Mapping, error) {
 	return self.data.AsDict()
-}
-
-func (self *Config) evaluated(v Any) (Any, error) {
-	return self.evaluator.evaluate(v)
 }

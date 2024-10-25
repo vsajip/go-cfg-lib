@@ -1747,18 +1747,23 @@ func TestConfigSlicesAndIndices(t *testing.T) {
 	}
 }
 
-func TestAbsoluteIncludePath(t *testing.T) {
+func TestIncludePaths(t *testing.T) {
 	V := mustGetValue
 
-	p, err := filepath.Abs(dataFilePath("derived", "test.cfg"))
-	p = strings.Replace(p, "\\", "/", -1)
-	source := strings.Replace("test: @'foo'", "foo", p, -1)
-	var sr io.Reader = strings.NewReader(source)
-	cfg := NewConfig()
-	err = cfg.Load(&sr)
+	p1 := dataFilePath("derived", "test.cfg")
+	p2, err := filepath.Abs(p1)
 	assert.Nil(t, err)
-	cv := V(t, cfg, "test.computed6")
-	assert.Equal(t, int64(2), cv)
+	plist := [2]string{p1, p2}
+	for _, p := range plist {
+		p = strings.Replace(p, "\\", "/", -1)
+		source := strings.Replace("test: @'foo'", "foo", p, -1)
+		var sr io.Reader = strings.NewReader(source)
+		cfg := NewConfig()
+		err = cfg.Load(&sr)
+		assert.Nil(t, err)
+		cv := V(t, cfg, "test.computed6")
+		assert.Equal(t, int64(2), cv)
+	}
 }
 
 func TestNestedIncludePath(t *testing.T) {
